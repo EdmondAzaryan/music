@@ -10,10 +10,10 @@
             --bg-color: #1a1a24;
             --text-active: #ffffff;
             --text-inactive: rgba(255, 255, 255, 0.35);
+            --btn-bg: rgba(255, 255, 255, 0.1);
         }
         body {
             background-color: var(--bg-color);
-            /* Легкий радиальный градиент на фоне для объема */
             background-image: radial-gradient(circle at 50% 0%, #323245 0%, var(--bg-color) 70%);
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -26,7 +26,7 @@
             box-sizing: border-box;
         }
         
-        /* Шапка: мини-обложка и инфа о треке */
+        /* Шапка: обложка, инфа и кнопки */
         .header {
             display: flex;
             align-items: center;
@@ -34,34 +34,77 @@
             z-index: 10;
         }
         .cover-mini {
-            width: 50px;
-            height: 50px;
-            border-radius: 8px;
+            width: 55px;
+            height: 55px;
+            border-radius: 12px;
             background: linear-gradient(135deg, #444, #111);
-            margin-right: 15px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             flex-shrink: 0;
+            object-fit: cover;
         }
         .track-info {
             display: flex;
             flex-direction: column;
             justify-content: center;
             overflow: hidden;
+            margin-left: 15px;
+            flex-grow: 1;
         }
         .track-title {
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        /* Значок E (Explicit) для стиля */
+        .explicit-icon {
+            background-color: rgba(255,255,255,0.2);
+            color: #fff;
+            font-size: 9px;
+            font-weight: bold;
+            padding: 1px 4px;
+            border-radius: 3px;
         }
         .track-artist {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--text-inactive);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        /* Кнопки справа (Звезда и Точки) */
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 10px;
+        }
+        .icon-btn {
+            background: var(--btn-bg);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: 0.2s;
+        }
+        .icon-btn:active {
+            background: rgba(255,255,255,0.2);
+            transform: scale(0.9);
+        }
+        .icon-btn svg {
+            fill: #fff;
+            width: 18px;
+            height: 18px;
         }
 
         /* Контейнер с текстом песни */
@@ -74,7 +117,6 @@
             scroll-behavior: smooth;
             display: flex;
             flex-direction: column;
-            /* Плавное растворение текста сверху и снизу */
             mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 75%, transparent 100%);
             -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 75%, transparent 100%);
         }
@@ -82,14 +124,14 @@
             display: none;
         }
         
-        /* Стилизация самих строчек (эффект TikTok / Apple Music) */
+        /* Стилизация строк */
         .lyric-line {
             font-size: 26px;
             font-weight: 700;
             color: var(--text-inactive);
             margin: 12px 0;
             line-height: 1.3;
-            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             filter: blur(1.5px);
             transform-origin: left center;
             cursor: pointer;
@@ -133,10 +175,23 @@
 <body>
 
     <div class="header">
-        <div class="cover-mini"></div>
+        <img class="cover-mini" id="cover-image" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="cover">
         <div class="track-info">
-            <div class="track-title" id="title-display">Загрузка...</div>
+            <div class="track-title">
+                <span id="title-display">Загрузка...</span>
+                <span class="explicit-icon">E</span>
+            </div>
             <div class="track-artist" id="artist-display">Подключение</div>
+        </div>
+        <div class="header-actions">
+            <!-- Кнопка Звезда -->
+            <button class="icon-btn">
+                <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            </button>
+            <!-- Кнопка Три точки -->
+            <button class="icon-btn">
+                <svg viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            </button>
         </div>
     </div>
 
@@ -151,7 +206,6 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        // Красим системную шапку телеграма в цвет нашего фона
         tg.setHeaderColor('#1a1a24'); 
         tg.setBackgroundColor('#1a1a24');
 
@@ -161,8 +215,10 @@
         const lyricsContainer = document.getElementById('lyrics');
         const titleDisplay = document.getElementById('title-display');
         const artistDisplay = document.getElementById('artist-display');
+        const coverImage = document.getElementById('cover-image');
+        
         let lyrics = [];
-
+        let currentActiveIndex = -1;
         const trackId = tg.initDataUnsafe?.start_param;
 
         async function loadTrack() {
@@ -184,10 +240,27 @@
                 artistDisplay.innerText = track.artist;
                 audio.src = track.audio;
 
+                // Запускаем параллельно поиск обложки и текста
+                fetchCover(track.title, track.artist);
                 fetchLyrics(track.title, track.artist);
             } catch (e) {
                 titleDisplay.innerText = "Ошибка";
                 artistDisplay.innerText = "Сбой загрузки";
+            }
+        }
+
+        // Поиск настоящей обложки через Apple iTunes API
+        async function fetchCover(title, artist) {
+            try {
+                const query = encodeURIComponent(artist + ' ' + title);
+                const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=1`);
+                const data = await res.json();
+                if (data.results && data.results.length > 0) {
+                    // Берем картинку в хорошем качестве
+                    coverImage.src = data.results[0].artworkUrl100;
+                }
+            } catch (e) {
+                console.log("Обложка не найдена");
             }
         }
 
@@ -219,7 +292,6 @@
         function renderLyrics() {
             lyricsContainer.innerHTML = '';
             
-            // Пустой блок сверху, чтобы первая строчка начиналась с середины экрана
             const padTop = document.createElement('div');
             padTop.style.height = '35vh';
             lyricsContainer.appendChild(padTop);
@@ -229,7 +301,7 @@
                 el.className = 'lyric-line';
                 el.id = 'line-' + index;
                 el.innerText = line.text;
-                // При клике на строчку песня перематывается на этот момент
+                
                 el.onclick = () => {
                     audio.currentTime = line.time;
                     audio.play();
@@ -237,36 +309,47 @@
                 lyricsContainer.appendChild(el);
             });
             
-            // Пустой блок снизу, чтобы можно было докрутить до конца
             const padBot = document.createElement('div');
             padBot.style.height = '50vh';
             lyricsContainer.appendChild(padBot);
+            
+            // Запускаем 60fps движок синхронизации
+            requestAnimationFrame(syncLyrics);
         }
 
-        audio.addEventListener('timeupdate', () => {
-            if (lyrics.length === 0) return;
-            const currentTime = audio.currentTime;
-            
-            let activeIndex = -1;
-            for (let i = 0; i < lyrics.length; i++) {
-                const isLast = i === lyrics.length - 1;
-                if (currentTime >= lyrics[i].time && (isLast || currentTime < lyrics[i + 1].time)) {
-                    activeIndex = i;
-                    break;
+        // Продвинутая 60fps синхронизация текста
+        function syncLyrics() {
+            if (lyrics.length > 0 && !audio.paused) {
+                // Добавляем микро-смещение (0.3 сек) чтобы текст опережал звук и ощущался ровнее
+                const currentTime = audio.currentTime + 0.3;
+                
+                let activeIndex = -1;
+                for (let i = 0; i < lyrics.length; i++) {
+                    const isLast = i === lyrics.length - 1;
+                    if (currentTime >= lyrics[i].time && (isLast || currentTime < lyrics[i + 1].time)) {
+                        activeIndex = i;
+                        break;
+                    }
                 }
-            }
 
-            if (activeIndex !== -1) {
-                const el = document.getElementById('line-' + activeIndex);
-                if (el && !el.classList.contains('active')) {
-                    // Убираем класс active у всех
+                if (activeIndex !== -1 && activeIndex !== currentActiveIndex) {
+                    currentActiveIndex = activeIndex;
+                    
                     document.querySelectorAll('.lyric-line').forEach(e => e.classList.remove('active'));
-                    // Добавляем текущей
-                    el.classList.add('active');
-                    // Центрируем активную строчку на экране
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    const activeEl = document.getElementById('line-' + activeIndex);
+                    if (activeEl) {
+                        activeEl.classList.add('active');
+                        activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
                 }
             }
+            // Зацикливаем проверку
+            requestAnimationFrame(syncLyrics);
+        }
+
+        audio.addEventListener('play', () => {
+            requestAnimationFrame(syncLyrics);
         });
 
         loadTrack();
