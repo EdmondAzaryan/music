@@ -229,6 +229,20 @@
             playerWrap.classList.toggle('hidden');
         });
 
+        // Функция очистки от мусора YouTube (слова Текст, Lyrics, скобки, года)
+        function sanitizeText(str) {
+            if (!str) return '';
+            return str
+                .replace(/\+?\s*текст/gi, '')      // убираем "+ Текст"
+                .replace(/\+?\s*lyrics/gi, '')     // убираем "+ Lyrics"
+                .replace(/\b20[1-2][0-9]\b/g, '')  // убираем года типа 2019, 2023
+                .replace(/\[.*?\]/g, '')           // убираем [Official Audio]
+                .replace(/\(.*?\)/g, '')           // убираем (Music Video)
+                .replace(/\+/g, '')                // убираем плюсы
+                .replace(/\s+/g, ' ')              // сжимаем пробелы
+                .trim();
+        }
+
         async function loadTrack() {
             if (!trackId) {
                 titleDisplay.innerText = "Ошибка";
@@ -258,7 +272,11 @@
 
         async function fetchCover(title, artist) {
             try {
-                const query = encodeURIComponent(artist + ' ' + title);
+                // Очищаем для поиска обложки
+                const cleanArtist = sanitizeText(artist.split(/&|,|feat\.|ft\./i)[0]);
+                const cleanTitle = sanitizeText(title);
+                const query = encodeURIComponent(cleanArtist + ' ' + cleanTitle);
+                
                 const res = await fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=1`);
                 const data = await res.json();
                 if (data.results && data.results.length > 0) {
@@ -272,11 +290,11 @@
         async function fetchLyrics(title, artist) {
             lyricsContainer.innerHTML = '<div class="status-msg">Ищем текст песни... 🔍</div>';
 
-            const mainArtist = artist.split(/&|,|feat\.|ft\./i)[0].trim();
-            const cleanTitle = title.trim();
+            // Очищаем исполнителя и название от мусора
+            const mainArtist = sanitizeText(artist.split(/&|,|feat\.|ft\./i)[0]);
+            const cleanTitle = sanitizeText(title);
 
             const queries = [
-                `https://lrclib.net/api/search?q=${encodeURIComponent(artist + ' ' + cleanTitle)}`,
                 `https://lrclib.net/api/search?q=${encodeURIComponent(mainArtist + ' ' + cleanTitle)}`,
                 `https://lrclib.net/api/search?q=${encodeURIComponent(cleanTitle)}`
             ];
@@ -322,7 +340,8 @@
                     }
                 } catch (e) {}
 
-                lyricsContainer.innerHTML = '<div class="status-msg">Текст песни не найден 😔</div>';
+                // Выводим очищенные данные, чтобы было понятно, что именно искали
+                lyricsContainer.innerHTML = `<div class="status-msg">Текст не найден 😔<br><span style="font-size:14px; opacity:0.5;">Искали: ${mainArtist} - ${cleanTitle}</span></div>`;
             }
         }
 
@@ -388,13 +407,10 @@
             requestAnimationFrame(syncLyrics);
         }
 
-        // ЖЕСТКАЯ СИНХРОНИЗАЦИЯ БЕЗ СБЕГАНИЯ ВПЕРЕД
         function syncLyrics() {
-            // Синхронизируем ТОЛЬКО когда музыка реально заиграла и идет проигрывание
             if (lyrics.length > 0 && !audio.paused && audio.readyState >= 2) {
                 const currentTime = audio.currentTime;
 
-                // Если музыка еще на самом старте (до первой строчки текста)
                 if (currentTime < lyrics[0].time) {
                     if (currentActiveIndex !== -1) {
                         currentActiveIndex = -1;
