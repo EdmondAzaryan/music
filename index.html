@@ -143,7 +143,7 @@
             text-shadow: 0 4px 15px rgba(255,255,255,0.15);
         }
 
-        /* Нижняя панель с плеером */
+        /* Нижняя панель с плеером (полностью уезжает вниз без всяких кнопок) */
         .player-wrapper {
             position: fixed;
             bottom: 0;
@@ -173,103 +173,6 @@
             text-align: left;
             margin-top: 40px;
         }
-
-        /* МОДАЛЬНОЕ ОКНО ПЛЕЙЛИСТА */
-        .playlist-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 15, 22, 0.95);
-            backdrop-filter: blur(20px);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            box-sizing: border-box;
-            transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
-        .playlist-modal.open {
-            transform: translateY(0);
-        }
-        .playlist-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 15px;
-        }
-        .playlist-header h2 {
-            margin: 0;
-            font-size: 20px;
-        }
-        .close-playlist {
-            background: var(--btn-bg);
-            border: none;
-            color: #fff;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        .playlist-items {
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-        .playlist-track {
-            padding: 12px 15px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 12px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid transparent;
-            transition: 0.2s;
-        }
-        .playlist-track.playing {
-            border-color: rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.08);
-        }
-        .track-meta {
-            flex-grow: 1;
-            overflow: hidden;
-            cursor: pointer;
-        }
-        .pl-title {
-            font-weight: 700;
-            font-size: 15px;
-            margin-bottom: 3px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .pl-artist {
-            font-size: 13px;
-            color: var(--text-inactive);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .delete-track-btn {
-            background: none;
-            border: none;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 16px;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 8px;
-            transition: 0.2s;
-            flex-shrink: 0;
-        }
-        .delete-track-btn:active {
-            color: #ff3b30;
-            background: rgba(255, 59, 48, 0.15);
-        }
     </style>
 </head>
 <body>
@@ -284,11 +187,10 @@
             <div class="track-artist" id="artist-display">Подключение</div>
         </div>
         <div class="header-actions">
-            <!-- Кнопка открытия плейлиста -->
-            <button class="icon-btn" id="playlist-btn" title="Мои песни">
-                <svg viewBox="0 0 24 24"><path d="M4 10h12v2H4zm0-4h12v2H4zm0 8h8v2H4zm10 0v6l5-3z"/></svg>
+            <button class="icon-btn">
+                <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
             </button>
-            <!-- Кнопка скрыть/показать плеер -->
+            <!-- Кнопка "три точки" теперь скрывает и показывает плеер -->
             <button class="icon-btn" id="toggle-player-btn" title="Скрыть/Показать плеер">
                 <svg viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
             </button>
@@ -301,17 +203,6 @@
 
     <div class="player-wrapper" id="player-wrap">
         <audio id="audio" controls autoplay></audio>
-    </div>
-
-    <!-- Модальное окно плейлиста -->
-    <div class="playlist-modal" id="playlist-modal">
-        <div class="playlist-header">
-            <h2>🎵 Мои песни</h2>
-            <button class="close-playlist" id="close-playlist">✕</button>
-        </div>
-        <div class="playlist-items" id="playlist-items">
-            <!-- Сюда динамически добавляются треки -->
-        </div>
     </div>
 
     <script>
@@ -331,93 +222,14 @@
         const playerWrap = document.getElementById('player-wrap');
         const togglePlayerBtn = document.getElementById('toggle-player-btn');
         
-        const playlistBtn = document.getElementById('playlist-btn');
-        const playlistModal = document.getElementById('playlist-modal');
-        const closePlaylistBtn = document.getElementById('close-playlist');
-        const playlistItemsContainer = document.getElementById('playlist-items');
-        
         let lyrics = [];
         let currentActiveIndex = -1;
         const trackId = tg.initDataUnsafe?.start_param;
 
-        // Управление видимостью плеера
+        // По клику на три точки плеер полностью уезжает или возвращается
         togglePlayerBtn.addEventListener('click', () => {
             playerWrap.classList.toggle('hidden');
         });
-
-        // Открытие/закрытие плейлиста
-        playlistBtn.addEventListener('click', () => {
-            renderPlaylistUI();
-            playlistModal.classList.add('open');
-        });
-        closePlaylistBtn.addEventListener('click', () => {
-            playlistModal.classList.remove('open');
-        });
-
-        // Работа с локальным плейлистом в памяти браузера
-        function saveTrackToMyPlaylist(track) {
-            let myTracks = JSON.parse(localStorage.getItem('my_music_playlist') || '[]');
-            if (!myTracks.some(t => t.audio === track.audio)) {
-                myTracks.unshift(track);
-                localStorage.setItem('my_music_playlist', JSON.stringify(myTracks));
-            }
-        }
-
-        function removeTrackFromPlaylist(index, event) {
-            event.stopPropagation(); // Чтобы при клике на крестик трек не начинал играть
-            let myTracks = JSON.parse(localStorage.getItem('my_music_playlist') || '[]');
-            myTracks.splice(index, 1);
-            localStorage.setItem('my_music_playlist', JSON.stringify(myTracks));
-            renderPlaylistUI(); // Перерисовываем список
-        }
-
-        function renderPlaylistUI() {
-            let myTracks = JSON.parse(localStorage.getItem('my_music_playlist') || '[]');
-            playlistItemsContainer.innerHTML = '';
-
-            if (myTracks.length === 0) {
-                playlistItemsContainer.innerHTML = '<div style="color:rgba(255,255,255,0.4); text-align:center; margin-top:40px;">Список пуст. Открывайте треки через бота, и они появятся здесь!</div>';
-                return;
-            }
-
-            myTracks.forEach((track, index) => {
-                const item = document.createElement('div');
-                item.className = `playlist-track ${audio.src === track.audio ? 'playing' : ''}`;
-                
-                // Блок с информацией о треке (кликабельный для воспроизведения)
-                const metaDiv = document.createElement('div');
-                metaDiv.className = 'track-meta';
-                metaDiv.innerHTML = `
-                    <div class="pl-title">${track.title}</div>
-                    <div class="pl-artist">${track.artist}</div>
-                `;
-                metaDiv.onclick = () => {
-                    playSelectedTrack(track);
-                    playlistModal.classList.remove('open');
-                };
-
-                // Кнопка удаления
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'delete-track-btn';
-                deleteBtn.innerHTML = '✕';
-                deleteBtn.title = 'Удалить';
-                deleteBtn.onclick = (e) => removeTrackFromPlaylist(index, e);
-
-                item.appendChild(metaDiv);
-                item.appendChild(deleteBtn);
-                playlistItemsContainer.appendChild(item);
-            });
-        }
-
-        function playSelectedTrack(track) {
-            titleDisplay.innerText = track.title;
-            artistDisplay.innerText = track.artist;
-            audio.src = track.audio;
-            audio.play();
-
-            fetchCover(track.title, track.artist);
-            fetchLyrics(track.title, track.artist);
-        }
 
         async function loadTrack() {
             if (!trackId) {
@@ -437,8 +249,6 @@
                 titleDisplay.innerText = track.title;
                 artistDisplay.innerText = track.artist;
                 audio.src = track.audio;
-
-                saveTrackToMyPlaylist(track);
 
                 fetchCover(track.title, track.artist);
                 fetchLyrics(track.title, track.artist);
@@ -515,6 +325,7 @@
 
         function syncLyrics() {
             if (lyrics.length > 0 && !audio.paused) {
+                // Идеальный тайминг текста (ускорен на миллисекунды)
                 const LYRIC_OFFSET = 0.45; 
                 const currentTime = audio.currentTime + LYRIC_OFFSET;
                 
