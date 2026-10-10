@@ -78,8 +78,8 @@
 
         .header-actions {
             display: flex;
-            gap: 8px;
-            margin-left: 10px;
+            gap: 6px;
+            margin-left: 8px;
         }
         .icon-btn {
             background: var(--btn-bg);
@@ -93,6 +93,9 @@
             cursor: pointer;
             backdrop-filter: blur(5px);
             transition: 0.2s;
+            color: #fff;
+            font-size: 13px;
+            font-weight: bold;
         }
         .icon-btn:active {
             background: rgba(255,255,255,0.2);
@@ -100,8 +103,8 @@
         }
         .icon-btn svg {
             fill: #fff;
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
         }
 
         .lyrics-container {
@@ -230,10 +233,15 @@
             <div class="track-artist" id="artist-display">Подключение</div>
         </div>
         <div class="header-actions">
+            <!-- Кнопки сдвига тайминга текста: отстает (-) / спешит (+) -->
+            <button class="icon-btn" id="offset-minus" title="Текст раньше (-0.5с)">-</button>
+            <button class="icon-btn" id="offset-plus" title="Текст позже (+0.5с)">+</button>
+            <!-- Кнопка плейлиста -->
             <button class="icon-btn" id="playlist-btn" title="Мои песни">
                 <svg viewBox="0 0 24 24"><path d="M4 10h12v2H4zm0-4h12v2H4zm0 8h8v2H4zm10 0v6l5-3z"/></svg>
             </button>
-            <button class="icon-btn" id="toggle-player-btn" title="Скрыть/Показать плеер">
+            <!-- Кнопка скрыть/показать плеер -->
+            <button class="icon-btn" id="toggle-player-btn" title="Скрыть плеер">
                 <svg viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
             </button>
         </div>
@@ -276,14 +284,41 @@
         const playlistModal = document.getElementById('playlist-modal');
         const closePlaylistBtn = document.getElementById('close-playlist');
         const playlistItemsContainer = document.getElementById('playlist-items');
+
+        const offsetMinus = document.getElementById('offset-minus');
+        const offsetPlus = document.getElementById('offset-plus');
         
         let lyrics = [];
         let currentActiveIndex = -1;
+        let timeOffset = 0.45; // Базовая задержка тайминга
         const trackId = tg.initDataUnsafe?.start_param;
 
         togglePlayerBtn.addEventListener('click', () => { playerWrap.classList.toggle('hidden'); });
         playlistBtn.addEventListener('click', () => { renderPlaylistUI(); playlistModal.classList.add('open'); });
         closePlaylistBtn.addEventListener('click', () => { playlistModal.classList.remove('open'); });
+
+        // Управление сдвигом тайминга кнопками + и -
+        offsetMinus.addEventListener('click', () => {
+            timeOffset -= 0.5;
+            showToast(`Сдвиг тайминга: ${timeOffset.toFixed(1)}с`);
+        });
+        offsetPlus.addEventListener('click', () => {
+            timeOffset += 0.5;
+            showToast(`Сдвиг тайминга: ${timeOffset.toFixed(1)}с`);
+        });
+
+        function showToast(text) {
+            let toast = document.getElementById('toast-msg');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast-msg';
+                toast.style.cssText = "position:fixed; top:75px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:#fff; padding:6px 14px; border-radius:20px; font-size:12px; z-index:1000; transition:0.3s;";
+                document.body.appendChild(toast);
+            }
+            toast.innerText = text;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 1500);
+        }
 
         function saveTrackToMyPlaylist(track) {
             let myTracks = JSON.parse(localStorage.getItem('my_music_playlist') || '[]');
@@ -380,13 +415,22 @@
             } catch (e) {}
         }
 
+        // УМНЫЙ ПОИСК ТЕКСТА С ДВОЙНЫМ ЗАПРОСОМ (Решает проблему "Текст не найден")
         async function fetchLyrics(title, artist) {
             try {
-                // УМНЫЙ ПОИСК ЧЕРЕЗ "q=", чтобы находить треки вроде "Бейба судьба"
-                const response = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(artist + ' ' + title)}`);
-                const data = await response.json();
+                // Попытка 1: Ищем по связке Исполнитель + Трек
+                let response = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(artist + ' ' + title)}`);
+                let data = await response.json();
                 
-                const itemWithLyrics = data.find(item => item.syncedLyrics && item.syncedLyrics.trim() !== '');
+                let itemWithLyrics = data.find(item => item.syncedLyrics && item.syncedLyrics.trim() !== '');
+
+                // Попытка 2: Если не нашлось, ищем только по названию трека (очищенному от скобок)
+                if (!itemWithLyrics) {
+                    const cleanTitle = title.replace(/[\(\[].*?[\)\]]/g, '').trim();
+                    response = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(cleanTitle)}`);
+                    data = await response.json();
+                    itemWithLyrics = data.find(item => item.syncedLyrics && item.syncedLyrics.trim() !== '');
+                }
 
                 if (itemWithLyrics) {
                     parseLrc(itemWithLyrics.syncedLyrics);
@@ -426,16 +470,16 @@
             requestAnimationFrame(syncLyrics);
         }
 
+        // Обработка протухшей ссылки
         audio.onerror = () => {
             titleDisplay.innerText = "Ошибка ссылки";
             artistDisplay.innerText = "Ссылка устарела";
-            lyricsContainer.innerHTML = '<div class="status-msg">⚠️ Аудиоссылка протухла. Запустите трек заново через бота!</div>';
+            lyricsContainer.innerHTML = '<div class="status-msg">⚠️ Аудиоссылка протухла. Ссылки SoundCloud со временем сгорают. Запустите трек заново через бота!</div>';
         };
 
         function syncLyrics() {
             if (lyrics.length > 0 && !audio.paused) {
-                const LYRIC_OFFSET = 0.45; 
-                const currentTime = audio.currentTime + LYRIC_OFFSET;
+                const currentTime = audio.currentTime + timeOffset;
                 
                 let activeIndex = -1;
                 for (let i = 0; i < lyrics.length; i++) {
