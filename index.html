@@ -13,8 +13,6 @@
             --btn-bg: rgba(255, 255, 255, 0.1);
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bottom: env(safe-area-inset-bottom, 0px);
-            /* Переменная для высоты панели Telegram — задаётся через JS */
-            --tg-header-h: 55px;
         }
         html, body {
             height: 100%;
@@ -30,11 +28,26 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            /* Сдвигаем вверх ровно на высоту панели Telegram */
-            margin-top: calc(-1 * var(--tg-header-h));
-            padding-top: calc(var(--tg-header-h) + var(--safe-top));
+            /* ===== ГЛАВНОЕ: ПЕРЕКРЫВАЕМ ПАНЕЛЬ TELEGRAM СВЕРХУ ===== */
+            /* Создаём "заглушку", которая закроет панель с кнопкой "Закрыть" */
+            position: relative;
+            padding-top: 50px; /* Высота, на которую нужно перекрыть панель */
+            padding-bottom: var(--safe-bottom);
             height: 100vh;
             height: 100dvh;
+        }
+        
+        /* Эта "заглушка" закроет собой панель Telegram сверху */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 55px; /* Высота панели, которую нужно перекрыть */
+            background: var(--bg-color);
+            z-index: 99999; /* Самый высокий приоритет */
+            pointer-events: none; /* Не мешает кликам */
         }
         
         .header {
@@ -226,42 +239,12 @@
         tg.setHeaderColor('#1a1a24'); 
         tg.setBackgroundColor('#1a1a24');
 
-        // ===== АВТООПРЕДЕЛЕНИЕ ВЫСОТЫ ПАНЕЛИ TELEGRAM =====
-        // Вычисляем реальную высоту верхней панели, чтобы сдвинуть контент ровно на неё
-        function updateTgHeaderHeight() {
-            // Пытаемся получить viewportStableHeight и сравнить с высотой окна
-            const tgHeight = tg.viewportStableHeight || window.innerHeight;
-            const realHeight = window.innerHeight;
-            
-            // Разница между реальной высотой и высотой viewport Telegram = высота панели
-            // Но проще: используем фиксированные значения, которые точно скроют панель
-            let headerHeight = 60; // базовое значение
-            
-            // Если Telegram сообщает о своём viewport, используем его
-            if (tg.viewportHeight && tg.viewportStableHeight) {
-                // Высота панели = разница между window.innerHeight и tg.viewportStableHeight
-                const diff = window.innerHeight - tg.viewportStableHeight;
-                if (diff > 0 && diff < 150) {
-                    headerHeight = diff;
-                }
-            }
-            
-            document.documentElement.style.setProperty('--tg-header-h', headerHeight + 'px');
-            console.log('Telegram header height:', headerHeight);
-        }
-
-        updateTgHeaderHeight();
-        // Обновляем при изменении размера окна (поворот экрана и т.д.)
-        window.addEventListener('resize', updateTgHeaderHeight);
-
         function goFullscreen() {
             if (tg.requestFullscreen) {
                 tg.requestFullscreen();
             } else if (document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(e => console.log(e));
             }
-            // После запроса полного экрана обновляем высоту
-            setTimeout(updateTgHeaderHeight, 500);
         }
 
         document.body.addEventListener('click', function initFullscreen() {
@@ -269,7 +252,6 @@
             document.body.removeEventListener('click', initFullscreen);
         }, { once: true });
 
-        // --- ЛОГИКА ПЛЕЕРА ---
         const JSONBIN_KEY = "$2a$10$K0t8NaC64RzHdWCbtN.i2.sUpZS28KhFhruBtunwtsz0LB8uEWRsy";
 
         const audio = document.getElementById('audio');
