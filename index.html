@@ -28,22 +28,22 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            /* Сдвигаем контент вниз, чтобы панель Telegram ушла за верхний край */
-            padding-top: 70px;
+            /* ===== УВЕЛИЧИЛИ ОТСТУП СВЕРХУ ===== */
+            padding-top: 85px; /* было 70px → стало 85px */
             padding-bottom: var(--safe-bottom);
             height: 100vh;
             height: 100dvh;
             position: relative;
         }
         
-        /* Заглушка сверху — перекрывает панель Telegram с кнопкой "Закрыть" */
+        /* Заглушка сверху — перекрывает панель Telegram */
         body::before {
             content: '';
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            height: 75px;
+            height: 90px; /* было 75px → стало 90px */
             background: var(--bg-color);
             z-index: 99999;
             pointer-events: none;
