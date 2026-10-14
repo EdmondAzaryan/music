@@ -13,6 +13,8 @@
             --btn-bg: rgba(255, 255, 255, 0.1);
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bottom: env(safe-area-inset-bottom, 0px);
+            /* Переменная для высоты панели Telegram — задаётся через JS */
+            --tg-header-h: 55px;
         }
         html, body {
             height: 100%;
@@ -28,12 +30,11 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            /* ===== ОПТИМАЛЬНЫЕ ОТСТУПЫ (уменьшены) ===== */
-            margin-top: -55px;   /* Было -60px → стало -55px (или поставьте -50px, если всё ещё высоко) */
-            padding-top: calc(55px + var(--safe-top));
+            /* Сдвигаем вверх ровно на высоту панели Telegram */
+            margin-top: calc(-1 * var(--tg-header-h));
+            padding-top: calc(var(--tg-header-h) + var(--safe-top));
             height: 100vh;
             height: 100dvh;
-            /* ===== КОНЕЦ ===== */
         }
         
         .header {
@@ -157,8 +158,8 @@
             left: 0;
             width: 100%;
             padding: 20px;
-            padding-bottom: calc(20px + var(--safe-bottom) + 20px); /* Было +30px → стало +20px */
-            margin-bottom: -20px; /* Было -30px → стало -20px */
+            padding-bottom: calc(20px + var(--safe-bottom) + 20px);
+            margin-bottom: -20px;
             background: linear-gradient(to top, rgba(26,26,36,1) 30%, rgba(26,26,36,0) 100%);
             box-sizing: border-box;
             z-index: 10;
@@ -225,12 +226,42 @@
         tg.setHeaderColor('#1a1a24'); 
         tg.setBackgroundColor('#1a1a24');
 
+        // ===== АВТООПРЕДЕЛЕНИЕ ВЫСОТЫ ПАНЕЛИ TELEGRAM =====
+        // Вычисляем реальную высоту верхней панели, чтобы сдвинуть контент ровно на неё
+        function updateTgHeaderHeight() {
+            // Пытаемся получить viewportStableHeight и сравнить с высотой окна
+            const tgHeight = tg.viewportStableHeight || window.innerHeight;
+            const realHeight = window.innerHeight;
+            
+            // Разница между реальной высотой и высотой viewport Telegram = высота панели
+            // Но проще: используем фиксированные значения, которые точно скроют панель
+            let headerHeight = 60; // базовое значение
+            
+            // Если Telegram сообщает о своём viewport, используем его
+            if (tg.viewportHeight && tg.viewportStableHeight) {
+                // Высота панели = разница между window.innerHeight и tg.viewportStableHeight
+                const diff = window.innerHeight - tg.viewportStableHeight;
+                if (diff > 0 && diff < 150) {
+                    headerHeight = diff;
+                }
+            }
+            
+            document.documentElement.style.setProperty('--tg-header-h', headerHeight + 'px');
+            console.log('Telegram header height:', headerHeight);
+        }
+
+        updateTgHeaderHeight();
+        // Обновляем при изменении размера окна (поворот экрана и т.д.)
+        window.addEventListener('resize', updateTgHeaderHeight);
+
         function goFullscreen() {
             if (tg.requestFullscreen) {
                 tg.requestFullscreen();
             } else if (document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(e => console.log(e));
             }
+            // После запроса полного экрана обновляем высоту
+            setTimeout(updateTgHeaderHeight, 500);
         }
 
         document.body.addEventListener('click', function initFullscreen() {
@@ -238,6 +269,7 @@
             document.body.removeEventListener('click', initFullscreen);
         }, { once: true });
 
+        // --- ЛОГИКА ПЛЕЕРА ---
         const JSONBIN_KEY = "$2a$10$K0t8NaC64RzHdWCbtN.i2.sUpZS28KhFhruBtunwtsz0LB8uEWRsy";
 
         const audio = document.getElementById('audio');
