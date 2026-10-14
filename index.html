@@ -11,7 +11,6 @@
             --text-active: #ffffff;
             --text-inactive: rgba(255, 255, 255, 0.35);
             --btn-bg: rgba(255, 255, 255, 0.1);
-            /* Безопасные отступы для iPhone (чтобы контент не залезал под "бровь" и полоску снизу) */
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
@@ -29,13 +28,14 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            padding-top: var(--safe-top);
-            padding-bottom: var(--safe-bottom);
+            /* ===== ОПТИМАЛЬНЫЕ ОТСТУПЫ (уменьшены) ===== */
+            margin-top: -55px;   /* Было -60px → стало -55px (или поставьте -50px, если всё ещё высоко) */
+            padding-top: calc(55px + var(--safe-top));
             height: 100vh;
-            height: 100dvh; /* Динамическая высота для мобильных браузеров */
+            height: 100dvh;
+            /* ===== КОНЕЦ ===== */
         }
         
-        /* Шапка: обложка, инфа и кнопки */
         .header {
             display: flex;
             align-items: center;
@@ -87,7 +87,6 @@
             text-overflow: ellipsis;
         }
 
-        /* Кнопки справа в шапке */
         .header-actions {
             display: flex;
             gap: 8px;
@@ -116,7 +115,6 @@
             height: 18px;
         }
 
-        /* Контейнер с текстом песни */
         .lyrics-container {
             flex-grow: 1;
             padding: 20px;
@@ -153,14 +151,14 @@
             text-shadow: 0 4px 15px rgba(255,255,255,0.15);
         }
 
-        /* Нижняя панель с плеером */
         .player-wrapper {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
             padding: 20px;
-            padding-bottom: calc(20px + var(--safe-bottom));
+            padding-bottom: calc(20px + var(--safe-bottom) + 20px); /* Было +30px → стало +20px */
+            margin-bottom: -20px; /* Было -30px → стало -20px */
             background: linear-gradient(to top, rgba(26,26,36,1) 30%, rgba(26,26,36,0) 100%);
             box-sizing: border-box;
             z-index: 10;
@@ -201,7 +199,6 @@
             <button class="icon-btn">
                 <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
             </button>
-            <!-- Кнопка "три точки" теперь скрывает и показывает плеер -->
             <button class="icon-btn" id="toggle-player-btn" title="Скрыть/Показать плеер">
                 <svg viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
             </button>
@@ -219,38 +216,28 @@
     <script>
         const tg = window.Telegram.WebApp;
         
-        // --- РАЗВОРАЧИВАЕМ НА ВЕСЬ ЭКРАН ---
         tg.expand(); 
         
-        // Отключаем свайп вниз для закрытия приложения (мешает скроллу текста)
         if (tg.isVerticalSwipesEnabled !== undefined) {
             tg.isVerticalSwipesEnabled = false;
         }
 
-        // Устанавливаем цвета
         tg.setHeaderColor('#1a1a24'); 
         tg.setBackgroundColor('#1a1a24');
 
-        // Функция запроса настоящего полного экрана (скрывает верхнюю панель Telegram)
         function goFullscreen() {
-            // Нативный метод Telegram (работает в новых версиях)
             if (tg.requestFullscreen) {
                 tg.requestFullscreen();
-            } 
-            // Резервный вариант для браузера
-            else if (document.documentElement.requestFullscreen) {
+            } else if (document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(e => console.log(e));
             }
         }
 
-        // ВАЖНО: Полный экран можно запросить только после действия пользователя (клика/тапа)
-        // Поэтому вешаем обработчик на первый клик по экрану
         document.body.addEventListener('click', function initFullscreen() {
             goFullscreen();
             document.body.removeEventListener('click', initFullscreen);
         }, { once: true });
 
-        // --- ОСТАЛЬНАЯ ЛОГИКА ПЛЕЕРА ---
         const JSONBIN_KEY = "$2a$10$K0t8NaC64RzHdWCbtN.i2.sUpZS28KhFhruBtunwtsz0LB8uEWRsy";
 
         const audio = document.getElementById('audio');
@@ -266,7 +253,6 @@
         let currentActiveIndex = -1;
         const trackId = tg.initDataUnsafe?.start_param;
 
-        // По клику на три точки плеер полностью уезжает или возвращается
         togglePlayerBtn.addEventListener('click', () => {
             playerWrap.classList.toggle('hidden');
         });
