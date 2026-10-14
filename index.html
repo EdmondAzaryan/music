@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Music Player</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -11,19 +11,28 @@
             --text-active: #ffffff;
             --text-inactive: rgba(255, 255, 255, 0.35);
             --btn-bg: rgba(255, 255, 255, 0.1);
+            /* Безопасные отступы для iPhone (чтобы контент не залезал под "бровь" и полоску снизу) */
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
         }
         body {
-            background-color: var(--bg-color);
             background-image: radial-gradient(circle at 50% 0%, #323245 0%, var(--bg-color) 70%);
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
             box-sizing: border-box;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+            height: 100vh;
+            height: 100dvh; /* Динамическая высота для мобильных браузеров */
         }
         
         /* Шапка: обложка, инфа и кнопки */
@@ -32,6 +41,7 @@
             align-items: center;
             padding: 20px 20px 10px 20px;
             z-index: 10;
+            flex-shrink: 0;
         }
         .cover-mini {
             width: 55px;
@@ -143,13 +153,14 @@
             text-shadow: 0 4px 15px rgba(255,255,255,0.15);
         }
 
-        /* Нижняя панель с плеером (полностью уезжает вниз без всяких кнопок) */
+        /* Нижняя панель с плеером */
         .player-wrapper {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
             padding: 20px;
+            padding-bottom: calc(20px + var(--safe-bottom));
             background: linear-gradient(to top, rgba(26,26,36,1) 30%, rgba(26,26,36,0) 100%);
             box-sizing: border-box;
             z-index: 10;
@@ -207,10 +218,39 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand();
+        
+        // --- РАЗВОРАЧИВАЕМ НА ВЕСЬ ЭКРАН ---
+        tg.expand(); 
+        
+        // Отключаем свайп вниз для закрытия приложения (мешает скроллу текста)
+        if (tg.isVerticalSwipesEnabled !== undefined) {
+            tg.isVerticalSwipesEnabled = false;
+        }
+
+        // Устанавливаем цвета
         tg.setHeaderColor('#1a1a24'); 
         tg.setBackgroundColor('#1a1a24');
 
+        // Функция запроса настоящего полного экрана (скрывает верхнюю панель Telegram)
+        function goFullscreen() {
+            // Нативный метод Telegram (работает в новых версиях)
+            if (tg.requestFullscreen) {
+                tg.requestFullscreen();
+            } 
+            // Резервный вариант для браузера
+            else if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+            }
+        }
+
+        // ВАЖНО: Полный экран можно запросить только после действия пользователя (клика/тапа)
+        // Поэтому вешаем обработчик на первый клик по экрану
+        document.body.addEventListener('click', function initFullscreen() {
+            goFullscreen();
+            document.body.removeEventListener('click', initFullscreen);
+        }, { once: true });
+
+        // --- ОСТАЛЬНАЯ ЛОГИКА ПЛЕЕРА ---
         const JSONBIN_KEY = "$2a$10$K0t8NaC64RzHdWCbtN.i2.sUpZS28KhFhruBtunwtsz0LB8uEWRsy";
 
         const audio = document.getElementById('audio');
@@ -325,7 +365,6 @@
 
         function syncLyrics() {
             if (lyrics.length > 0 && !audio.paused) {
-                // Идеальный тайминг текста (ускорен на миллисекунды)
                 const LYRIC_OFFSET = 0.45; 
                 const currentTime = audio.currentTime + LYRIC_OFFSET;
                 
